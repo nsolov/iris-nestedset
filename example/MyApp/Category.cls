@@ -1,6 +1,8 @@
 Class MyApp.Category Extends (%Persistent, CDEV.NestedSet)
 {
 
+Index TreeIndex On (Root, Lft, Rgt);
+
 Parameter LEVEL = "Lvl";
 
 Parameter LEFT = "Lft";
@@ -28,10 +30,11 @@ ClassMethod PrintTree(nodeId As %Integer) As %Status
     try {
         set category = ##class(MyApp.Category).%OpenId(nodeId,,.sc)
         $$$ThrowOnError(sc)
-        set sql = "SELECT ID, Title, Lvl, Lft, Rgt FROM MyApp.Category WHERE Lft >= ? AND Rgt <=? ORDER BY Lft"
+        do category.%Reload()
+        set sql = "SELECT ID, Title, Lvl, Lft, Rgt FROM MyApp.Category WHERE Lft >= ? AND Rgt <=? AND Root = ? ORDER BY Lft"
         set stmt = ##class(%SQL.Statement).%New()
         $$$ThrowOnError(stmt.%Prepare(sql))
-        set res = stmt.%Execute(category.Lft, category.Rgt)
+        set res = stmt.%Execute(category.Lft, category.Rgt, category.Root)
         set rootlevel = 0
         while (res.%Next()) {
             write !
@@ -53,10 +56,11 @@ ClassMethod PrintPath(nodeId As %Integer) As %Status
     try {
         set category = ##class(MyApp.Category).%OpenId(nodeId,,.sc)
         $$$ThrowOnError(sc)
-        set sql = "SELECT ID, Title, Lvl, Lft, Rgt FROM MyApp.Category WHERE Lft <= ? AND Rgt >=? ORDER BY Lft"
+        do category.%Reload()
+        set sql = "SELECT ID, Title, Lvl, Lft, Rgt FROM MyApp.Category WHERE Lft <= ? AND Rgt >=? AND Root = ? ORDER BY Lft"
         set stmt = ##class(%SQL.Statement).%New()
         $$$ThrowOnError(stmt.%Prepare(sql))
-        set res = stmt.%Execute(category.Lft, category.Rgt)
+        set res = stmt.%Execute(category.Lft, category.Rgt, category.Root)
 
         while (res.%Next()) { 
             if (res.%ROWCOUNT=1) { write !} else { write " > " }
