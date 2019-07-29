@@ -2,7 +2,7 @@
 
 Objectscript class that implements basic functionality of the nested set model.
 
-This implementation allows:
+This implementation:
 * automatically sets the values of the additional fields Level, Right, Left when: 
     * adding new data (no matter how you add data via SQL or saving an object using the  %Save method)
     * deleting a node (deleting a node deletes all its sub-nodes)
