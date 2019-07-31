@@ -14,7 +14,7 @@ Restrictions:
 * it is not allowed to specify SqlFieldName for special fields (Parent, Rgt, Lvl, Lft, Root).
 
 ### How to Install
-1. Import the CDEV.NestedSet class from the repository.
+1. Import classes from the CDEV package.
 2. Create a persistent class (for example, MyApp.Category) and add CDEV.NestedSet as a superclass to your class.
 3. In your class (MyApp.Category) add properties: Parent, Rgt, Lvl, Lft, Root.
 4. Override parameters PARENT, LEVEL, ROOT, LEFT, RIGHT. In the values of these parameters, you must specify the names of the corresponding properties in your class.

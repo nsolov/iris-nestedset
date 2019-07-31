@@ -10,7 +10,7 @@
 /// or use SQL INSERT statement
 /// 5) To Delete Node - call %DeleteId, or use SQL DELETE Statement
 /// 6) To order siblings use MoveUp and MoveDown methods
-Class CDEV.NestedSet [ Abstract ]
+Class CDEV.NestedSet [ Abstract, DependsOn = CDEV.NestedSetUtils ]
 {
 
 /// Override this parameter!
@@ -41,10 +41,7 @@ Parameter PARENT;
 ClassMethod GetRoots() As %List [ CodeMode = objectgenerator ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" set list = """"")
 		do %code.WriteLine(" &sql(SELECT %DLIST("""_x("ROOT")_""") INTO :list  FROM  "_tablename_" WHERE """_x("PARENT")_""" IS NULL)")
 		do %code.WriteLine(" return list")
@@ -55,10 +52,7 @@ ClassMethod GetRoots() As %List [ CodeMode = objectgenerator ]
 Method AddLastChild(newNode As CDEV.NestedSet) As %Status [ CodeMode = objectgenerator ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" set newNode."_x("PARENT")_" = $this")
 		do %code.WriteLine(" return newNode.%Save()")
 	}
@@ -68,10 +62,7 @@ Method AddLastChild(newNode As CDEV.NestedSet) As %Status [ CodeMode = objectgen
 Method AddFirstChild(newNode As CDEV.NestedSet) As %Status [ CodeMode = objectgenerator ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" try {")
 		do %code.WriteLine("	 &sql(START TRANSACTION)")
 		do %code.WriteLine("	 set newNode."_x("PARENT")_" = $this")
@@ -100,16 +91,13 @@ Method AddFirstChild(newNode As CDEV.NestedSet) As %Status [ CodeMode = objectge
 Method MoveUp() As %Status [ CodeMode = objectgenerator ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" do ..%Reload()")
 		do %code.WriteLine(" set left = .."_x("LEFT")_", right = .."_x("RIGHT")_", root=.."_x("ROOT")_"")
 		do %code.WriteLine(" set prevLevel = 0")
 		do %code.WriteLine(" &sql(SELECT TOP 1 """_x("LEVEL")_""", """_x("LEFT")_""", """_x("RIGHT")_""" INTO :prevLevel, :prevLeft, :prevRight FROM "_tablename_" WHERE """_x("ROOT")_"""=:root AND """_x("RIGHT")_"""<:left ORDER BY """_x("RIGHT")_""" DESC)")
 		do %code.WriteLine(" if (SQLCODE<0) { return ##class(%Exception.SQL).CreateFromSQLCODE(SQLCODE, %msg).AsStatus() }")
-		do %code.WriteLine(" if (prevLevel'=..Lvl) { return $$$ERROR(5001,""This node is already the first one"") }")
+		do %code.WriteLine(" if (prevLevel'=.."_x("LEVEL")_") { return $$$ERROR(5001,""This node is already the first one"") }")
 		do %code.WriteLine(" try {")		
 		do %code.WriteLine("     set plus = right - prevRight")
 		do %code.WriteLine("     set minus = left - prevLeft")
@@ -132,16 +120,13 @@ Method MoveUp() As %Status [ CodeMode = objectgenerator ]
 Method MoveDown() As %Status [ CodeMode = objectgenerator ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" do ..%Reload()")
 		do %code.WriteLine(" set left = .."_x("LEFT")_", right = .."_x("RIGHT")_", root=.."_x("ROOT")_"")
 		do %code.WriteLine(" set nextLevel = 0")
 		do %code.WriteLine(" &sql(SELECT TOP 1 """_x("LEVEL")_""", """_x("LEFT")_""", """_x("RIGHT")_""" INTO :nextLevel, :nextLeft, :nextRight FROM "_tablename_" WHERE """_x("ROOT")_"""=:root AND """_x("LEFT")_""">:right ORDER BY """_x("LEFT")_""" ASC)")
 		do %code.WriteLine(" if (SQLCODE<0) { return ##class(%Exception.SQL).CreateFromSQLCODE(SQLCODE, %msg).AsStatus() }")
-		do %code.WriteLine(" if ((nextLevel=0)||(nextLevel'=..Lvl)) { return $$$ERROR(5001,""This node is already the last one"") }")
+		do %code.WriteLine(" if ((nextLevel=0)||(nextLevel'=.."_x("LEVEL")_")) { return $$$ERROR(5001,""This node is already the last one"") }")
 		do %code.WriteLine(" try {")		
 		do %code.WriteLine("     set minus = nextLeft - left")
 		do %code.WriteLine("     set plus = nextRight - right")
@@ -161,46 +146,10 @@ Method MoveDown() As %Status [ CodeMode = objectgenerator ]
 	}
 }
 
-ClassMethod GetParams() As %List [ Final, Internal ]
-{
-	set params = ""
-	set cc = ##class(%Dictionary.CompiledClass).%OpenId("CDEV.NestedSet")
-	set key = ""
-	for {
-		set param = cc.Parameters.GetNext(.key)
-		quit:(key="")
-		set params = params_$LB(param.Name)	
-	}
-	return params
-}
-
-/// returns number of notnull params
-ClassMethod GetParamValues(%compiledclass As %Dictionary.CompiledClass, params As %List, Output values) As %Integer
-{
-	set key = ""
-	set i = 0
-	for {
-		set param = %compiledclass.Parameters.GetNext(.key)
-		quit:(key="")
-		if ($LF(params, param.Name)) {
-			if (param.Default'="") {
-				set i=i+1
-				set values(param.Name)=param.Default
-			}
-		}
-		quit:($LL(params)=i) // all params found
-	}
-	return i
-}
-
 Trigger AfterAddNode [ CodeMode = objectgenerator, Event = INSERT, Foreach = row/object, Time = AFTER ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" new parent, parentRight, parentLevel, id, root, parentID")
 		do %code.WriteLine(" set id = {ID}")
         do %code.WriteLine(" set parentID = {"_x("PARENT")_"}")
@@ -219,28 +168,28 @@ Trigger AfterAddNode [ CodeMode = objectgenerator, Event = INSERT, Foreach = row
 		do %code.WriteLine("     set root = id ")
 		do %code.WriteLine(" } ")
 		do %code.WriteLine(" &sql(UPDATE %NOTRIGGER "_tablename_" SET """_x("LEFT")_"""=(:parentRight), """_x("RIGHT")_"""=(:parentRight+1), """_x("LEVEL")_"""=(:parentLevel+1), """_x("ROOT")_"""=:root WHERE ID = :id)")
+	} else {
+		do %code.WriteLine(" set %ok=0 set %msg=""Specify all PARAMETERS "_$LTS(params)_" and recompile class""")
 	}
 }
 
 /// Prevent changing helper properties
 Trigger UpdateNode [ CodeMode = objectgenerator, Event = UPDATE, Foreach = row/object ]
 {
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" if (({"_x("LEVEL")_"*C}) || ({"_x("LEFT")_"*C}) || ({"_x("RIGHT")_"*C}) || ({"_x("ROOT")_"*C}) || ({"_x("PARENT")_"*C})) {")
 		do %code.WriteLine("     set %ok = 0")
 		do %code.WriteLine("     set %msg = ""Special fields (LEFT, RIGHT, ROOT, LEVEL, PARENT) cannot be changed""")
 		do %code.WriteLine(" }")
+	} else {
+		do %code.WriteLine(" set %ok=0 set %msg=""Specify all PARAMETERS "_$LTS(params)_" and recompile class""")
 	}
 }
 
 Trigger DeleteNode [ CodeMode = objectgenerator, Event = DELETE, Foreach = row/object, Time = AFTER ]
 {
 	set tablename = %compiledclass.SqlSchemaName_"."_%compiledclass.SqlTableName
-	set params = ##class(CDEV.NestedSet).GetParams()
-	set paramsNumber = ##class(CDEV.NestedSet).GetParamValues(%compiledclass, .params, .x)
-	if (paramsNumber = $LL(params)) {
+	if (##class(CDEV.NestedSetUtils).IsParamsValid(%compiledclass, .params, .x)) {
 		do %code.WriteLine(" new left, right, root")
 		do %code.WriteLine(" set left = {"_x("LEFT")_"}")
 		do %code.WriteLine(" set right = {"_x("RIGHT")_"}")
@@ -248,6 +197,8 @@ Trigger DeleteNode [ CodeMode = objectgenerator, Event = DELETE, Foreach = row/o
 		do %code.WriteLine(" &sql(DELETE %NOTRIGGER FROM "_tablename_" WHERE """_x("LEFT")_""">:left AND """_x("RIGHT")_"""<:right)")
 		do %code.WriteLine(" &sql(UPDATE %NOTRIGGER "_tablename_" SET """_x("RIGHT")_"""=("""_x("RIGHT")_"""-(:right-:left+1)) WHERE ("""_x("RIGHT")_""">:right) AND ("""_x("LEFT")_"""<:left) AND ("""_x("ROOT")_"""=:root))")
 		do %code.WriteLine(" &sql(UPDATE %NOTRIGGER "_tablename_" SET """_x("LEFT")_"""=("""_x("LEFT")_"""-(:right-:left+1)), """_x("RIGHT")_"""=("""_x("RIGHT")_"""-(:right-:left+1)) WHERE ("""_x("LEFT")_""">:right) AND ("""_x("ROOT")_"""=:root))")
+	} else {
+		do %code.WriteLine(" set %ok=0 set %msg=""Specify all PARAMETERS "_$LTS(params)_" and recompile class""")
 	}
 }
 
