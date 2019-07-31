@@ -26,6 +26,28 @@ Index TreeIndex On (Root, Lft, Rgt);
 
 6. Compile your class
 
+### How to Install with IRIS Community Edition in docker container
+1. Be sure you have docker installed.
+2. git clone or download the repo
+3. in the repo folder run:
+```
+#docker-compose build
+....
+
+```
+4. if the build successfully finished run the container:
+```
+#docker-compose up -d
+....
+
+```
+5. Open the IRIS terminal:
+```
+#docker-compose exec iris iris session iris
+USER>zn "NS"
+NS>
+```
+6. Use it
 ### How to use
 * Use %New(), %Save(), %DeleteId() or SQL queries as usual. To add new node specify Parent property, if you leave Parent property blank - new root will be created
 * To add new node you can also use AddFirstChild() or AddLastChild() 
