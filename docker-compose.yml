@@ -3,8 +3,11 @@ services:
   iris:
     build: .
     restart: always
+    command: --check-caps false
     ports:
-      - 52781:52773
+      - 51773:1972
+      - 52773:52773
+      - 53773
     volumes:
-      - ~/iris.key:/usr/irissys/mgr/iris.key
+#      - ~/iris.key:/usr/irissys/mgr/iris.key
       - ./:/iris/app
